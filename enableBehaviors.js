@@ -14,6 +14,23 @@ ig.module(
       // only single instances added at a time of any given behavior.
       behaviorsByName: {},
 
+      iterateBehaviors: function(func) {
+        for (var key in this.behaviorsById) {
+          var behavior = this.behaviorsById[key];
+          func.call(this, behavior);
+        }
+      },
+
+      // Remove all the behaviors.
+      kill: function() {
+        this.parent();
+        // Defer this until the event queue is free otherwise kill behaviors
+        // are removed before they can act on the entity being killed.
+        setTimeout(function() {
+          this.iterateBehaviors(this.removeBehavior);
+        }.bind(this), 0);
+      },
+
       addBehavior: function(behavior, name) {
         this.behaviorsById[behavior.id] = behavior;
         this.behaviorsByName[behavior.name] = behavior;
@@ -21,6 +38,9 @@ ig.module(
       },
 
       removeBehavior: function(behavior) {
+        if (!behavior) {
+          return;
+        }
         if (this.behaviorsById.hasOwnProperty(behavior.id)) {
           this.behaviorsById[behavior.id] = null;
           this.behaviorsByName[behavior.name] = null;
@@ -40,7 +60,7 @@ ig.module(
       behave: function(methodName) {
         var entity = this;
         var args = Array.prototype.slice.call(arguments, 1);
-        _.each(this.behaviorsById, function(behavior) {
+        this.iterateBehaviors(function(behavior) {
           if (!behavior) {
             return;
           }
@@ -48,7 +68,22 @@ ig.module(
             behavior[methodName].apply(behavior, [entity].concat(args));
           }
         });
+      },
+
+      // Entity methods:
+      update: function() {
+        this.parent();
+        this.behave('update');
+      },
+
+      draw: function() {
+        this.behave('predraw');
+        this.parent();
+        this.behave('draw');
       }
+
+      // TODO: handleMovementTrace. Possibly, store oldVel before this.parent
+      // and give behaviors a chance to set velocity themselves?
     });
   };
 });
