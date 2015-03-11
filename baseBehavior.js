@@ -5,11 +5,20 @@ ig.module(
   'impact.impact'
 )
 .defines(function() {
+
+  var idCounter = 0;
+
+  var uniqueId = function(prefix) {
+    var id = prefix + idCounter;
+    idCounter += 1;
+    return id;
+  }
+
   BaseBehavior = ig.Class.extend({
     enabled: true,
 
     init: function() {
-      this.id = _.uniqueId('behavior-');
+      this.id = uniqueId('behavior-');
     },
 
     // Called when the behavior is added to an entity.
